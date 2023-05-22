@@ -1,0 +1,22 @@
+---
+- name: Install Stata
+  hosts: stata_v17-mp4-ab01
+  vars:
+    appv_package_name: "v17 MP4 AB01 (x64)"
+    sas_token: "{{ lookup('env','SAWPBSHARES_SAS_TOKEN') }}"
+  gather_facts: false
+  tasks:
+    - name: Download AppV package on local machine. Needed because of firewall
+      ansible.builtin.command: /usr/bin/azcopy copy 'https://sawpbshares.file.core.windows.net/sources/UvA/Stata/{{ appv_package_name }}{{ sas_token }}' '/tmp' --recursive
+      delegate_to: 127.0.0.1
+
+    - name: Copy AppV package to target machine
+      ansible.windows.win_copy:
+        src: /tmp/{{ appv_package_name }}
+        dest: C:\Packages\Stata
+
+    - name: Mount package
+      ansible.windows.win_shell: Add-AppvClientPackage "C:\Packages\Stata\v17 MP4 AB01 (x64)\Stata MP4 2021 AB01 (x64).appv" | Publish-AppvClientPackage -Global | Mount-AppvClientPackage
+      
+    - name: Ensure a desktop shortcut for QDAMiner is created using chocolatey helpers
+      ansible.windows.win_shell: Import-Module "$env:ChocolateyInstall\helpers\chocolateyInstaller.psm1"; Install-ChocolateyShortcut -ShortcutFilePath "C:\Users\Public\Public Desktop\Desktop\MaxQDA.lnk" -TargetPath "C:\ProgramData\Microsoft\AppV\Client\Integration\DFB4C483-8C88-4943-AEE3-E8CD1B16B667\Root\VFS\ProgramFilesX64\MAXQDA2020\MAXQDA2020.exe"

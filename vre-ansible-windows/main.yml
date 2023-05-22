@@ -1,0 +1,30 @@
+---
+# Applications
+- name: MaxQDA
+  import_playbook: application-maxqda/maxqda.yml
+# - name: QDAMiner
+#   import_playbook: application-qdaminer/qdaminer.yml
+- name: RStudio
+  import_playbook: application-rstudio/rstudio.yml
+- name: Stata
+  import_playbook: application-stata/stata.yml  
+- name: SPSS
+  import_playbook: application-spss/spss.yml
+- name: VLC
+  import_playbook: application-vlc/vlc.yml
+- name: MPC
+  import_playbook: application-mpc/mpc.yml
+- name: AzureStorageExplorer
+  import_playbook: application-azstorex/azstorex.yml
+# Plugins
+- name: ResearchDrive
+  import_playbook: plugin-researchdrive/researchdrive.yml
+- name: AzureFiles
+  import_playbook: plugin-azfileshare/azurefileshare.yml
+
+# Reboot to wrap up configuration
+- name: Reboot the machine after all playbooks were run
+  hosts: all
+  tasks:
+    - name: Reboot
+      ansible.windows.win_reboot:

@@ -1,0 +1,27 @@
+---
+- name: Install MaxQDA
+  hosts: maxqda2020_2040
+  vars:
+    appv_package_name: "v06-maxqda2020-2040-en-x64-v01"
+    sas_token: "{{ lookup('env','SAWPBSHARES_SAS_TOKEN') }}"
+    shortcut: 'C:\Users\Public\Desktop\MaxQDA.lnk'
+    shortcut_target: 'C:\ProgramData\Microsoft\AppV\Client\Integration\DFB4C483-8C88-4943-AEE3-E8CD1B16B667\Root\VFS\ProgramFilesX64\MAXQDA2020\MAXQDA2020.exe'
+  gather_facts: false
+  tasks:
+    - name: Download AppV package on local machine. Needed because of firewall
+      ansible.builtin.command: /usr/bin/azcopy copy 'https://sawpbshares.file.core.windows.net/sources/AppV/{{ appv_package_name }}{{ sas_token }}' '/tmp' --recursive
+      delegate_to: 127.0.0.1
+
+    - name: Copy AppV package to target machine
+      ansible.windows.win_copy:
+        src: /tmp/{{ appv_package_name }}
+        dest: C:\Packages
+
+    - name: Mount package
+      ansible.windows.win_shell: Add-AppvClientPackage "C:\Packages\{{ appv_package_name }}\{{ appv_package_name }}.appv" | Publish-AppvClientPackage -Global | Mount-AppvClientPackage
+      
+    - name: Ensure a desktop shortcut for MaxQDA is created using chocolatey helpers
+      ansible.windows.win_shell: Import-Module "$env:ChocolateyInstall\helpers\chocolateyInstaller.psm1"; Install-ChocolateyShortcut -ShortcutFilePath "{{ shortcut }}" -TargetPath "{{ shortcut_target }}"
+
+    - name: Fix folder permissions
+      ansible.windows.win_shell: Add-MpPreference -ControlledFolderAccessAllowedApplications "{{ shortcut_target }}"

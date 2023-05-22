@@ -1,0 +1,6 @@
+include:
+  - project: 'open-source/gitlab-ci-templates'
+    file: 'semantic-release/.gitlab-ci-semantic-release.yml'
+
+.semantic-release:
+  stage: release

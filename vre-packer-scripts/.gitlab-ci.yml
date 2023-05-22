@@ -1,0 +1,40 @@
+image:
+  name: hashicorp/packer:1.7.4
+  entrypoint: [""]
+    
+variables:
+  # Azure credentials
+  PKR_VAR_uva_subscription_id: $VRE_PROD_SUBSCRIPTION_ID
+  PKR_VAR_hva_subscription_id: $HVA_VRE_PROD_SUBSCRIPTION_ID
+  PKR_VAR_client_id: $RIT_VRE_CI_PROD_SP_ID
+  PKR_VAR_client_secret: $RIT_VRE_CI_PROD_SP_SECRET
+
+  # AWS credentials
+  AWS_ACCESS_KEY_ID: $AWS_KEY_ID
+  AWS_SECRET_ACCESS_KEY: $AWS_KEY_VALUE
+  
+  PKR_ROOT: ${CI_PROJECT_DIR}
+  PKR_VAR_osType: $OS_TYPE # Set the osType Packer variable to the GitLab pipeline variable
+
+stages:
+  - validate
+  - build
+
+before_script:
+  - cd $PKR_ROOT/$OS_TYPE
+
+validate:
+  stage: validate
+  script:
+    - packer init .
+    - packer validate .
+  tags:
+    - vre-build
+
+build:
+  stage: build
+  script:
+    - packer init .
+    - packer build .
+  tags:
+    - vre-build

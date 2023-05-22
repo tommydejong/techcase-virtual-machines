@@ -1,0 +1,47 @@
+# VRE details
+faculty: "test"
+project: "case"
+projectOwner: "tommy.dejong@brightcubes.nl"
+costCenter: "elon musk"
+supportLevel: "ga maar los"
+autoShutdownSchedule: "18:00 -> 08:00, Saturday, Sunday"
+additionalTags:
+  secondOwner: "tommy.dejong@uva.nl"
+
+# VRE specifications
+cloud: "azure" # or aws
+region: "westeurope"
+vmSize: "Small" # Several options for Azure; "Small" = "Standard_B4ms" "Medium" = "Standard_D8s_v5", "GPU" = "Standard_NC6_Promo", "Memory" = "Standard_E8ds_v5". Or provide a custom size.
+osdiskSku: "HDD" # HDD, SSD, Premium, or Ultra
+osdiskSize: 128
+osType: "windows" # windows or linux
+software:
+  - name: "rstudio"
+    version: "1.4.1717"
+  - name: "vlc"
+    version: "3.0.16"
+  - name: "azurestorageexplorer"
+    version: "1.22.0"
+
+# Storage options
+researchdrive: false
+azFileStorage: false
+
+# RDP Access rules
+allowUvaVPN: true
+allowEduVPN: true
+remoteAccessRules:
+  - name: "Tommy_Home"
+    ip_address: "87.208.38.6"
+  - name: "BC_Office"
+    ip_address: "45.94.174.33"
+
+# Additional custom firewall rules
+firewallRules:
+  - name: "Jupyter"
+    access: "Allow"
+    protocol: "Tcp"
+    source_port_range: "*"
+    destination_port_range: "3000"
+    source_addresses:
+      - "87.208.38.6"

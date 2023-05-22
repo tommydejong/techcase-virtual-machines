@@ -1,0 +1,11 @@
+stages:
+  - lint
+
+lint-ansible:
+  image:
+    name: "willhallonline/ansible:2.9-alpine-3.13"
+  stage: lint
+  before_script:
+    - pip install ansible-lint
+  script:
+    - ansible-lint

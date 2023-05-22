@@ -1,0 +1,26 @@
+---
+- name: Install SPSS
+  hosts: spss_25
+  vars:
+    azcopy: '/usr/bin/azcopy'
+    appv_package_name: "i02-spss-25-en-x64-v04"
+    sas_token: "{{ lookup('env','SAWPBSHARES_SAS_TOKEN') }}"
+    shortcut: 'C:\Users\Public\Desktop\SPSS.lnk'
+    shortcut_target: 'C:\ProgramData\Microsoft\AppV\Client\Integration\5CC1D5AD-CB2E-4EB6-9EA7-DAC92C9B6F27\Root\VFS\ProgramFilesX64\IBM\SPSS\Statistics\25\stats.exe'
+  gather_facts: false
+  tasks:
+    - name: Download AppV package on local machine. Needed because of firewall
+      ansible.builtin.command: "{{ azcopy }} copy 'https://sawpbshares.file.core.windows.net/sources/AppV/{{ appv_package_name }}{{ sas_token }}' '/tmp' --recursive"
+      delegate_to: 127.0.0.1
+
+
+    - name: Copy AppV package to target machine
+      ansible.windows.win_copy:
+        src: /tmp/{{ appv_package_name }}
+        dest: C:\Packages
+
+    - name: Mount package
+      ansible.windows.win_shell: Add-AppvClientPackage "C:\Packages\{{ appv_package_name }}\{{ appv_package_name }}.appv" | Publish-AppvClientPackage -Global | Mount-AppvClientPackage
+
+    - name: Ensure a desktop shortcut for SPSS is created using chocolatey helpers
+      ansible.windows.win_shell: Import-Module "$env:ChocolateyInstall\helpers\chocolateyInstaller.psm1"; Install-ChocolateyShortcut -ShortcutFilePath "{{ shortcut }}" -TargetPath "{{ shortcut_target }}"

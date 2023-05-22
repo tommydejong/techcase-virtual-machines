@@ -1,0 +1,12 @@
+# Terraform binaries and providers
+tf: "1.0.8"
+azurerm: "2.90.0"
+azuread: "2.13.0"
+aws: "3.61.0"
+random: "3.1.0"
+tls: "3.1.0"
+ansible: "1.0.4"
+
+# Terraform modules
+vre: "1.2.0"
+storage: "1.2.0"

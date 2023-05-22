@@ -1,0 +1,14 @@
+---
+- name: Install R and RStudio using chocolatey
+  hosts: rstudio_1.4.1717
+  gather_facts: false
+  tasks:
+    - name: Wait for system to become reachable
+      wait_for_connection:
+        timeout: 300
+    - name: Install R
+      win_shell: choco install r.project --version=4.1.0
+    - name: Install RStudio
+      win_shell: choco install r.studio --version=1.4.1717
+    - name: Ensure a desktop shortcut for RStudio is created using chocolatey helpers
+      win_shell: Import-Module "$env:ChocolateyInstall\helpers\chocolateyInstaller.psm1"; Install-ChocolateyShortcut -ShortcutFilePath "C:\Users\Public\Desktop\RStudio.lnk" -TargetPath "C:\Program Files\RStudio\bin\rstudio.exe"

@@ -1,0 +1,51 @@
+---
+- name: Mount Azure File Share
+  hosts: az_files
+  vars: 
+    ps_script_name: mount-azure-file-share.ps1
+  gather_facts: false
+  tasks:
+    - name: Wait for system to become reachable
+      wait_for_connection:
+        timeout: 300
+
+    - name: Set an environment variable for the subscription ID 
+      win_environment:
+        state: present
+        name: "VREsubscriptionID"
+        value: "{{ vre_subscription }}"
+        level: machine
+
+    - name: Set an environment variable for the workspace resource group
+      win_environment:
+        state: present
+        name: "VREworkspaceRG"
+        value: "{{ vre_workspace_rg }}"
+        level: machine
+
+    - name: Set an environment variable for the workspace storage account
+      win_environment:
+        state: present
+        name: "VREworkspaceSA"
+        value: "{{ vre_workspace_sa }}"
+        level: machine
+    
+    - name: Copy Powershell script to target machine
+      ansible.windows.win_copy:
+        src: files/{{ ps_script_name }}
+        dest: C:\Packages\{{ ps_script_name }}
+        force: yes
+    
+    - name: Create file to run Powershell script on startup
+      ansible.windows.win_copy:
+        content: |
+          @echo off
+          PowerShell -ExecutionPolicy Unrestricted C:\Packages\{{ ps_script_name }} >> "%TEMP%\StartupLog-{{ ps_script_name }}.txt" 2>&1
+        dest: C:\ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp\startup-{{ ps_script_name }}.cmd
+        force: yes
+
+    - name: Run script to grab storage account key and mount file share
+      ansible.windows.win_shell: C:\Packages\{{ ps_script_name }} -subscriptionID {{ vre_subscription }} -workspaceSA {{ vre_workspace_sa }} -workspaceRG {{ vre_workspace_rg }}
+
+    - name: Ensure a desktop shortcut to the Azure File Share is created using chocolatey helpers
+      ansible.windows.win_shell: Import-Module $env:ChocolateyInstall\helpers\chocolateyInstaller.psm1; Install-ChocolateyShortcut -ShortcutFilePath "C:\Users\Public\Public Desktop\Azure File Share.lnk" -TargetPath Z:\

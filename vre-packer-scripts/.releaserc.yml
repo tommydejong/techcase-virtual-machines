@@ -1,0 +1,15 @@
+---
+branch: main
+preset: angular
+verifyConditions:
+  - "@semantic-release/gitlab"
+prepare:
+  - path: "@semantic-release/changelog"
+  - path: "@semantic-release/git"
+    message: "chore(release): Release ${nextRelease.version} [skip ci]"
+    assets: ["CHANGELOG.md"]
+publish:
+  - "@semantic-release/gitlab"
+success: false
+fail: false
+npmPublish: false

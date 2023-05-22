@@ -1,0 +1,12 @@
+---
+- name: Install VLC using chocolatey
+  hosts: vlc_3.0.16
+  gather_facts: false
+  tasks:
+    - name: Wait for system to become reachable
+      wait_for_connection:
+        timeout: 300
+    - name: Install VLC
+      win_shell: choco install vlc --version=3.0.16
+    - name: Ensure a desktop shortcut for VLC is created using chocolatey helpers
+      win_shell: Import-Module "$env:ChocolateyInstall\helpers\chocolateyInstaller.psm1"; Install-ChocolateyShortcut -ShortcutFilePath "C:\Users\Public\Public Desktop\VLC.lnk" -TargetPath "C:\Program Files\VideoLAN\VLC\vlc.exe"

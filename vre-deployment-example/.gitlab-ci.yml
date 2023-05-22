@@ -1,0 +1,96 @@
+image:
+  name: gitlab.ic.uva.nl:4567/vre/misc-helpers/gitlab-terragrunt-runner:8374a8ca
+
+variables:
+  GIT_STRATEGY: clone
+  PROJECT_ROOT: ${CI_PROJECT_DIR} #Techcase-Tommy-de-Jong
+  TG_ROOT: ${CI_PROJECT_DIR}/vre
+  MISC_HELPER_REPO: https://gitlab.ic.uva.nl/api/v4/projects/978/repository/files
+  TF_VAR_instance: $INSTANCE
+
+  # Azure credentails for credential helper script
+  ARM_SUBSCRIPTION_ID: $VRE_PROD_SUBSCRIPTION_ID
+  ARM_TENANT_ID: $AZ_UVA_TENANT_ID
+
+  # Keys
+  TF_VAR_jcApiKey: $JC_CONNECT_API_KEY
+  TF_VAR_rDriveKey: $RDRIVE_KEY
+  TF_VAR_rDriveUser: $RDRIVE_USER
+
+before_script:
+  - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.ic.uva.nl".insteadOf https://gitlab.ic.uva.nl
+  # Grab helper scripts for backing up VRE configs and versions after applying the config, creating snapshots and setting the Azure credentials
+  - 'curl --silent --header "PRIVATE-TOKEN: ${CI_ACCESS_TOKEN}" "${MISC_HELPER_REPO}/upload_vre_config_blob_v2.sh/raw" -o upload_vre_config_blob_v2.sh'
+  - 'curl --silent --header "PRIVATE-TOKEN: ${CI_ACCESS_TOKEN}" "${MISC_HELPER_REPO}/create_az_snapshot.sh/raw" -o create_az_snapshot.sh'
+  - 'curl --silent --header "PRIVATE-TOKEN: ${CI_ACCESS_TOKEN}" "${MISC_HELPER_REPO}/azure_credentials_v3.sh/raw" -o azure_credentials_v3.sh'
+  - source azure_credentials_v3.sh && rm azure_credentials_v3.sh
+  - cd ${CI_PROJECT_DIR}
+
+stages:
+  - validate
+  - deploy
+  - configure
+  - destroy
+
+init:
+  stage: validate
+  variables:
+    TERRAGRUNT_DISABLE_INIT: "true"
+  script:
+    - terragrunt run-all validate
+  artifacts:
+    paths:  
+    - ${TG_ROOT}/.terraform.lock.hcl
+  tags:
+    - vre-build
+  only:
+    - master
+
+apply:
+  stage: deploy
+  variables:
+    TERRAGRUNT_DISABLE_INIT: "false"
+  environment:
+    name: production
+  script:
+    - terragrunt run-all apply --terragrunt-non-interactive
+  allow_failure: false
+  tags:
+    - vre-build
+  except:
+    variables:
+      - $NUKE_FROM_ORBIT
+
+ansible:
+  stage: configure
+  variables:
+    ANSIBLE_HOST_KEY_CHECKING: "false"
+    ANSIBLE_TF_BIN: "terragrunt"
+  script:
+    - cd ${TG_ROOT}
+    - if [ ! -e /usr/bin/python ]; then ln -sf python3 /usr/bin/python ; fi 
+    - eval $(ssh-agent -s) && terragrunt output -raw vre_private_ssh_key | tr -d '\r' | ssh-add -
+    - osType=$(shyaml get-value osType < ${CI_PROJECT_DIR}/vre-config.yml) && echo 'Working with OS type ${osType}'
+    #- git clone "https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.ic.uva.nl/vre/vre-ansible-${osType}.git"
+    - ansible-playbook -i /usr/terraform.py ${PROJECT_ROOT}/vre-ansible-${osType}/main.yml
+  when: on_success
+  tags:
+    - vre-build
+  except:
+    variables:
+      - $NUKE_FROM_ORBIT
+
+destroy:
+  stage: destroy
+  variables:
+    TERRAGRUNT_DISABLE_INIT: "false"
+  environment:
+    name: production
+  script:
+    - terragrunt run-all destroy --terragrunt-non-interactive --terragrunt-exclude-dir ${PROJECT_ROOT}/storage
+  allow_failure: false
+  tags:
+    - vre-build
+  only:
+    variables:
+      - $NUKE_FROM_ORBIT == "the only way to make sure"

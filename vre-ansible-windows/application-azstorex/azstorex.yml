@@ -1,0 +1,12 @@
+---
+- name: Install Azure Storage Explorer using chocolatey
+  hosts: azurestorageexplorer_1.22.0
+  gather_facts: false
+  tasks:
+    - name: Wait for system to become reachable
+      wait_for_connection:
+        timeout: 300
+    - name: Install Azure Storage Explorer
+      win_shell: choco install microsoftazurestorageexplorer --version=1.22.0
+    - name: Ensure a desktop shortcut for Azure Storage Explorer is created using chocolatey helpers
+      win_shell: Import-Module "$env:ChocolateyInstall\helpers\chocolateyInstaller.psm1"; Install-ChocolateyShortcut -ShortcutFilePath "C:\Users\Public\Desktop\Azure Storage Explorer.lnk" -TargetPath "C:\Program Files (x86)\Microsoft Azure Storage Explorer\StorageExplorer.exe"

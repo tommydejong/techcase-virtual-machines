@@ -1,0 +1,17 @@
+---
+- name: Install QDAMiner
+  hosts: qdaminer_1.1
+  vars_files: vars/versions.yml
+  gather_facts: false
+  tasks:
+    - name: Copy Powershell script
+      ansible.builtin.copy:
+       url: https://vretfcoresa.blob.core.windows.net/software/{{ qdaminer_script_name }}"
+       dest: "c:\\packages\\{{ qdaminer_script_name }}"
+       force: yes
+
+    - name: Install QDAMiner
+      win_shell: 'c:\\packages\\{{ qdaminer_script_name }}'
+      
+    - name: Ensure a desktop shortcut for QDAMiner is created using chocolatey helpers
+      win_shell: 'Import-Module "$env:ChocolateyInstall\helpers\chocolateyInstaller.psm1"; Install-ChocolateyShortcut -ShortcutFilePath "C:\Users\Public\Public Desktop\QDAMiner Lite.lnk" -TargetPath "C:\Program Files (x86)\Provalis Research\QDALite.exe"'
